@@ -1,0 +1,40 @@
+/*
+ * ----------------------------------------------------------------------------
+ * gumax_print.css
+ * ----------------------------------------------------------------------------
+ */
+@import url("main.css");
+@import url("gumax_template.css");
+@import url("gumax_paulgu_com.css");
+
+body
+{
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+
+#gumax-header,
+.gumax-p-navigation-spacer,
+#gumax-p-navigation,
+#gumax-article-picture,
+#gumax-content-actions,
+.gumax-footer-spacer,
+#gumax-footer {
+	display: none; /* Hides all the elements irrelevant for printing */
+}
+
+#gumax-page-table-left, #gumax-page-table-right { background: none; }
+* html .gumax-page { border: none; }
+
+#security-info-toggle,
+#BreadCrumbsTrail,
+#ppdonation,
+.googleAdSenseContent {
+	display: none; /* Hides all other elements */
+}
+
+#bodyContent .eemail {
+	padding: 3px 7px 3px 40px;
+	width: 13.1em;
+}
+

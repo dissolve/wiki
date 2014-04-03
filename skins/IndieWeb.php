@@ -4,9 +4,9 @@
  * 'IndieWeb' style sheet for CSS2-capable browsers.
  *       Loosely based on the monobook style
  *
- * @Version 3.2.1
+ * @Version 5.0.0
  * @Author Paul Y. Gu, <gu.paul@gmail.com>
- * @Copyright paulgu.com 2006 - http://www.paulgu.com/
+ * @Copyright paulgu.com 2007 - http://www.paulgu.com/
  * @License: GPL (http://www.gnu.org/copyleft/gpl.html)
  *
  * This program is free software; you can redistribute it and/or modify
@@ -30,31 +30,44 @@
 if( !defined( 'MEDIAWIKI' ) )
     die( -1 );
 
-/** */
-require_once('includes/SkinTemplate.php');
-
 /**
  * Inherit main code from SkinTemplate, set the CSS and template filter.
  * @todo document
- * @package MediaWiki
- * @subpackage Skins
+ * @addtogroup Skins
  */
 class SkinIndieWeb extends SkinTemplate {
-    /** Using IndieWeb */
-    function initPage( &$out ) {
-        SkinTemplate::initPage( $out );
-        $this->skinname  = 'IndieWeb';
-        $this->stylename = 'indieweb';
-        $this->template  = 'IndieWebTemplate';
-    }
+	/** Using IndieWeb */
+	var $skinname = 'indieweb', $stylename = 'indieweb',
+		$template = 'IndieWebTemplate', $useHeadElement = false;
+
+	function setupSkinUserCss( OutputPage $out ) {
+		global $wgHandheldStyle;
+
+		parent::setupSkinUserCss( $out );
+
+		// Append to the default screen common & print styles...
+		$out->addStyle( 'indieweb/gumax_main.css', 'screen' );
+		if( $wgHandheldStyle ) {
+			// Currently in testing... try 'chick/main.css'
+			$out->addStyle( $wgHandheldStyle, 'handheld' );
+		}
+
+		$out->addStyle( 'indieweb/IE50Fixes.css', 'screen', 'lt IE 5.5000' );
+		$out->addStyle( 'indieweb/IE55Fixes.css', 'screen', 'IE 5.5000' );
+		$out->addStyle( 'indieweb/IE60Fixes.css', 'screen', 'IE 6' );
+		$out->addStyle( 'indieweb/IE70Fixes.css', 'screen', 'IE 7' );
+
+		$out->addStyle( 'indieweb/gumax_rtl.css', 'screen', '', 'rtl' );
+		$out->addStyle( 'indieweb/gumax_print.css', 'print' );
+	}
 }
 
 /**
  * @todo document
- * @package MediaWiki
- * @subpackage Skins
+ * @addtogroup Skins
  */
 class IndieWebTemplate extends QuickTemplate {
+    var $skin;
     /**
      * Template filter callback for IndieWeb skin.
      * Takes an associative array of data set from a SkinTemplate-based
@@ -145,58 +158,7 @@ class IndieWebTemplate extends QuickTemplate {
 
     <!-- ===== gumax-page-actions ===== -->
     <div id="gumax-page-actions">
-      <div id="gumax-content-actions" style="text-align: left">
-        <div class="middle-content">
-        <ul style="margin-left: 40px;">
-            <?php $lastkey = end(array_keys($this->data['content_actions'])) ?>
-            <?php foreach($this->data['content_actions'] as $key => $action) { ?>
-               <li id="ca-<?php echo Sanitizer::escapeId($key) ?>" <?php
-                   if($action['class']) { ?>class="<?php echo htmlspecialchars($action['class']) ?>"<?php } ?>
-               ><a href="<?php echo htmlspecialchars($action['href']). '"';
-                                        # We don't want to give the watch tab an accesskey if the
-                                        # page is being edited, because that conflicts with the
-                                        # accesskey on the watch checkbox.  We also don't want to
-                                        # give the edit tab an accesskey, because that's fairly su-
-                                        # perfluous and conflicts with an accesskey (Ctrl-E) often
-                                        # used for editing in Safari.
-					$linker = new Linker();
-                                        if( in_array( $action, array( 'edit', 'submit' ) )
-                                        && in_array( $key, array( 'edit', 'watch', 'unwatch' ))) {
-                                                echo $linker->tooltip( "ca-$key" );
-                                        } else {
-                                                echo $linker->tooltipAndAccesskey( "ca-$key" );
-                                        }
-				echo '>';
-                   echo htmlspecialchars($action['text']) ?></a> <?php
-                   	// echo '<!-- '; echo var_dump($this->skin); echo ' -->';
-                   if($key != $lastkey) //echo "&#8226;" ?></li>
-            <?php } ?>
-
-			<!-- Login link in header bar -->
-	         <?php $lastkey = end(array_keys($this->data['personal_urls'])) ?>
-	         <?php $item = $this->data['personal_urls'][$lastkey];
-	              ?><li id="gumax-pt-<?php echo Sanitizer::escapeId($key) ?>"><a href="<?php
-	               echo htmlspecialchars($item['href']) ?>"<?php
-	              if(!empty($item['class'])) { ?> class="<?php
-	               echo htmlspecialchars($item['class']) ?>"<?php } ?>><?php
-	               echo htmlspecialchars($item['text']) ?></a></li>
-
-
-        <!-- Search -->
-                <form action="<?php $this->text('searchaction') ?>" id="searchform" style="display: inline-block; float: right;">
-                    <input id="searchInput" name="search" type="text" <?php
-                        if($this->haveMsg('accesskey-search')) {
-                            ?>accesskey="<?php $this->msg('accesskey-search') ?>"<?php }
-                        if( isset( $this->data['search'] ) ) {
-                            ?> value="<?php $this->text('search') ?>"<?php } ?> />
-                    <input type='submit' name="fulltext" class="searchButton" id="mw-searchButton" value="<?php $this->msg('searchbutton') ?>" />
-                </form>
-        <!-- end of Search -->
-
-        </ul>
-        </div>
-
-      </div>
+			<?php $this->contentActionBox(); ?>
     </div>
     <!-- ===== end of gumax-page-actions ===== -->
     
@@ -213,29 +175,9 @@ class IndieWebTemplate extends QuickTemplate {
     
     <table id="gumax-content-body-table"><tr><td class="gumax-content-left">
     <!-- Navigation Menu -->
-    <div id="gumax-p-navigation-wrapper">
-
-    <div id="main-logo-wrapper">
-      <a href="/" id="main-logo"><img src="https://indiewebcamp.com/wiki/skins/indieweb/indiewebcamp-logo-500px.png" width="155" alt="IndieWebCamp"></a>
-    </div>
-
-	<?php foreach ($this->data['sidebar'] as $bar => $cont) { ?>
-	<div class='gumax-portlet' id='p-<?php echo Sanitizer::escapeId($bar) ?>'>
-		<h5><?php $out = wfMsg( $bar ); if (wfEmptyMsg($bar, $out)) echo $bar; else echo $out; ?></h5>
-		<div class="gumax-p-navigation">
-			<ul>
-                <?php foreach($cont as $key => $val) { ?>
-                    <li id="<?php echo Sanitizer::escapeId($val['id']) ?>"<?php
-                    if ( $val['active'] ) { ?> class="active" <?php }
-                    ?>><a href="<?php echo htmlspecialchars($val['href']) ?>"><?php echo htmlspecialchars($val['text']) ?></a></li>
-                <?php } ?>
-			</ul>
-		</div>
-	</div>
-	<?php } ?>
-
-    </div>
-    <!-- end of Navigation Menu -->
+	<?php $this->topNavigationBox(); ?>
+	<div class="gumax-p-navigation-spacer"></div>
+	<div class="visualClear"></div>
 
     </td><td class="gumax-content-right"> <!-- Main Content TD -->
 
@@ -270,7 +212,6 @@ class IndieWebTemplate extends QuickTemplate {
 </div>
 </div>
 
-
   <div class="bottom">
     <!-- ===== gumax-page-actions ===== -->
     <div id="gumax-page-actions">
@@ -288,13 +229,6 @@ class IndieWebTemplate extends QuickTemplate {
                                         # give the edit tab an accesskey, because that's fairly su-
                                         # perfluous and conflicts with an accesskey (Ctrl-E) often
                                         # used for editing in Safari.
-					$linker = new Linker();
-                                        if( in_array( $action, array( 'edit', 'submit' ) )
-                                        && in_array( $key, array( 'edit', 'watch', 'unwatch' ))) {
-                                                echo $linker->tooltip( "ca-$key" );
-                                        } else {
-                                                echo $linker->tooltipAndAccesskey( "ca-$key" );
-                                        }
 				echo '>';
                    echo htmlspecialchars($action['text']) ?></a> <?php
                    	// echo '<!-- '; echo var_dump($this->skin); echo ' -->';
@@ -428,6 +362,425 @@ include(dirname(__FILE__).'/sponsors.php');
 </body></html>
 <?php
 	wfRestoreWarnings();
-	} // end of execute() method
-} // end of class
+    } // end of execute() method
+
+	/*************************************************************************************************/
+	// GuMax Functions
+	/*************************************************************************************************/
+
+	function loginBox() {
 ?>
+	<!-- Login -->
+	<div id="gumax-p-login">
+		<ul>
+<?php		$lastkey = end(array_keys($this->data['personal_urls'])) ?>
+<?php		foreach($this->data['personal_urls'] as $key => $item) { ?>
+				<li id="pt-<?php echo Sanitizer::escapeId($key) ?>"<?php
+					if ($item['active']) { ?> class="active"<?php } ?>><a href="<?php
+					echo htmlspecialchars($item['href']) ?>"   <?php
+					if(!empty($item['class'])) { ?> class="<?php
+					echo htmlspecialchars($item['class']) ?>"<?php } ?>><?php
+					echo htmlspecialchars($item['text']) ?></a></li>
+<?php				if($key != $lastkey) echo "<li>&#47;</li>" ?>
+<?php		} ?>
+		</ul>
+	</div>
+	<!-- end of Login -->
+<?php
+	}
+
+	/*************************************************************************************************/
+	function logoBox() {
+?>
+	<!-- gumax-p-logo -->
+	<div id="gumax-p-logo">
+		<div id="p-logo">
+			<a style="background-image: url(<?php $this->text('logopath') ?>);" <?php
+				?>href="<?php echo htmlspecialchars($this->data['nav_urls']['mainpage']['href'])?>" <?php
+				?>title="<?php $this->msg('mainpage') ?>"></a>
+		</div>
+	</div>
+	<script type="<?php $this->text('jsmimetype') ?>"> if (window.isMSIE55) fixalpha(); </script>
+	<!-- end of gumax-p-logo -->
+<?php
+	}
+
+	/*************************************************************************************************/
+	function searchBox() {
+?>
+	<!-- Search -->
+                <form action="<?php $this->text('searchaction') ?>" id="searchform" style="display: inline-block; float: right;">
+                    <input id="searchInput" name="search" type="text" <?php
+                        if($this->haveMsg('accesskey-search')) {
+                            ?>accesskey="<?php $this->msg('accesskey-search') ?>"<?php }
+                        if( isset( $this->data['search'] ) ) {
+                            ?> value="<?php $this->text('search') ?>"<?php } ?> />
+                    <input type='submit' name="fulltext" class="searchButton" id="mw-searchButton" value="<?php $this->msg('searchbutton') ?>" />
+                </form>
+	<!-- end of Search -->
+<?php
+	}
+
+	/*************************************************************************************************/
+	function topNavigationBox() {
+?>
+	<!-- Navigation Menu -->
+    <div id="gumax-p-navigation-wrapper">
+
+    <div id="main-logo-wrapper">
+      <a href="/" id="main-logo"><img src="https://indiewebcamp.com/wiki/skins/indieweb/indiewebcamp-logo-500px.png" width="155" alt="IndieWebCamp"></a>
+    </div>
+	<div id="gumax-p-navigation">
+<?php	$counter = 0; ?>
+<?php	foreach ($this->data['sidebar'] as $bar => $cont) { ?>
+<?php		$counter++; ?>
+<?php		if ( $counter == 1 ) { ?>
+				<div class="gumax-portlet gumax-p-navigation">
+					<h5><?php $out = wfMsg( $bar ); if (wfEmptyMsg($bar, $out)) echo $bar; else echo $out; ?></h5>
+	<?php			if ( is_array( $cont ) ) { ?>
+
+							<ul>
+	<?php						foreach($cont as $key => $val) { ?>
+									<li id="<?php echo Sanitizer::escapeId($val['id']) ?>"<?php
+										if ( $val['active'] ) { ?> class="active" <?php }
+									?>><a href="<?php echo htmlspecialchars($val['href']) ?>"   ><?php echo htmlspecialchars($val['text']) ?></a></li>
+	<?php						} ?>
+							</ul>
+
+	<?php			} else {
+						# allow raw HTML block to be defined by extensions
+						print $cont;
+					} ?>
+				</div>
+<?php		} ?>
+<?php	} ?>
+	</div>
+	<!-- end of Navigation Menu -->
+<?php
+	}
+
+	/*************************************************************************************************/
+	function sidebarNavigationBox() {
+?>
+	<!-- Navigation Menu -->
+	<div id="gumax-p-navigation-sidebar">
+<?php	$counter = 0; ?>
+<?php	foreach ($this->data['sidebar'] as $bar => $cont) { ?>
+<?php		$counter++; ?>
+<?php		if ( $counter > 1 ) { ?>
+				<div class="generated-sidebar gumax-portlet-sidebar">
+					<h5><?php $out = wfMsg( $bar ); if (wfEmptyMsg($bar, $out)) echo $bar; else echo $out; ?></h5>
+	<?php			if ( is_array( $cont ) ) { ?>
+
+							<ul>
+	<?php						foreach($cont as $key => $val) { ?>
+									<li id="<?php echo Sanitizer::escapeId($val['id']) ?>"<?php
+										if ( $val['active'] ) { ?> class="active" <?php }
+									?>><a href="<?php echo htmlspecialchars($val['href']) ?>"   ><?php echo htmlspecialchars($val['text']) ?></a></li>
+	<?php						} ?>
+							</ul>
+
+	<?php			} else {
+						# allow raw HTML block to be defined by extensions
+						print $cont;
+					} ?>
+				</div>
+<?php		} ?>
+<?php	} ?>
+	</div>
+	<!-- end of Navigation Menu -->
+<?php
+	}
+
+	/*************************************************************************************************/
+	function languageBox() {
+		if( $this->data['language_urls'] ) {
+?>
+	<div id="p-lang" class="portlet">
+		<h5><?php $this->msg('otherlanguages') ?></h5>
+		<div class="pBody">
+			<ul>
+<?php		foreach($this->data['language_urls'] as $langlink) { ?>
+				<li class="<?php echo htmlspecialchars($langlink['class'])?>"><?php
+				?><a href="<?php echo htmlspecialchars($langlink['href']) ?>"><?php echo $langlink['text'] ?></a></li>
+<?php		} ?>
+			</ul>
+		</div>
+	</div>
+<?php
+		}
+	}
+
+	/*************************************************************************************************/
+	function contentActionBox() {
+		global $wgUser;
+		$skin = $wgUser->getSkin();
+?>
+
+	<!-- gumax-content-actions -->
+	<?php //if($this->data['loggedin']==1) { ?>
+    <div id="gumax-content-actions" style="text-align: left">
+        <div class="middle-content">
+        <ul style="margin-left: 40px;">
+		<?php
+			foreach($this->data['content_actions'] as $key => $tab) {
+				echo '
+			 <li id="' . Sanitizer::escapeId( "ca-$key" ) . '"';
+				if( $tab['class'] ) {
+					echo ' class="'.htmlspecialchars($tab['class']).'"';
+				}
+				echo '><a href="'.htmlspecialchars($tab['href']).'"';
+				# We don't want to give the watch tab an accesskey if the
+				# page is being edited, because that conflicts with the
+				# accesskey on the watch checkbox.  We also don't want to
+				# give the edit tab an accesskey, because that's fairly su-
+				# perfluous and conflicts with an accesskey (Ctrl-E) often
+				# used for editing in Safari.
+
+				echo '>'.htmlspecialchars($tab['text']).'</a></li>';
+			} 
+                 // grab log-out item   
+                
+                 $logout_item = $this->data['personal_urls']['logout'];
+                    echo '
+                 <li id="' . Sanitizer::escapeId( "ca-logout" ) . '"';
+				if( $logout_item['class'] ) {
+					echo ' class="'.htmlspecialchars($logout_item['class']).'"';
+				}
+				echo '><a href="'.htmlspecialchars($logout_item['href']).'"';
+                echo '>'.htmlspecialchars($logout_item['text']).'</a></li>';?>
+
+                
+
+	<?php $this->loginBox(); ?>
+	<?php $this->searchBox(); ?>
+		</ul>
+	  </div>
+	</div>
+	<?php //} ?>
+	<!-- end of gumax-content-actions -->
+<?php
+	}
+
+	/*************************************************************************************************/
+	function articlePictureBox() {
+?>
+<?php
+		$pageClasses = preg_split("/[\s]+/", $this->data['pageclass']); /* echo $this->data['pageclass']; */
+		foreach($pageClasses as $item){ if(strpos($item, "page-") !== false){ $page_class = $item; /* echo $page_class; */ } }
+
+		$file_ext_collection = array('.jpg', '.gif', '.png');
+		$found = false;
+		foreach ($file_ext_collection as $file_ext)
+		{
+			$gumax_article_picture_file = $this->data['stylepath'] . '/' . $this->data['stylename'] . '/images/pages/' . $page_class . $file_ext;
+			if (file_exists( $_SERVER['DOCUMENT_ROOT'] . '/' .$gumax_article_picture_file)) {
+				$found = true;
+				break;
+			}
+		}
+		// default article picture
+		if(!$found) {
+			$gumax_article_picture_file = $this->data['stylepath'] . '/' . $this->data['stylename'] . '/images/pages/' . 'page-Default.gif';
+			if (file_exists( $_SERVER['DOCUMENT_ROOT'] . '/' .$gumax_article_picture_file)) {
+				$found = true;
+			}
+		}
+		if($found) { ?>
+		<!-- gumax-article-picture -->
+			<div id="gumax-article-picture">
+				<a style="background-image: url(<?php echo $gumax_article_picture_file ?>);" <?php
+					?>href="<?php echo htmlspecialchars( $GLOBALS['wgTitle']->getLocalURL() )?>" <?php
+					?>title="<?php $this->data['displaytitle']!=""?$this->html('title'):$this->text('title') ?>"></a>
+			</div>
+			<div class="gumax-article-picture-spacer"></div>
+		<!-- end of gumax-article-picture -->
+<?php
+		}
+	}
+
+	/*************************************************************************************************/
+	function contentBox() {
+?>
+	<!-- gumax-content-body -->
+		<div id="gumax-column-content">
+	<div id="content">
+		<a name="top" id="top"></a>
+		<?php if($this->data['sitenotice']) { ?><div id="siteNotice"><?php $this->html('sitenotice') ?></div><?php } ?>
+		<h1 id="firstHeading" class="firstHeading gumax-firstHeading" ><?php $this->html('title') ?></h1>
+		<div id="bodyContent" class="gumax-bodyContent">
+			<h3 id="siteSub"><?php $this->msg('tagline') ?></h3>
+			<div id="contentSub"><?php $this->html('subtitle') ?></div>
+			<?php if($this->data['undelete']) { ?><div id="contentSub2"><?php     $this->html('undelete') ?></div><?php } ?>
+			<?php if($this->data['newtalk'] ) { ?><div class="usermessage"><?php $this->html('newtalk')  ?></div><?php } ?>
+			<?php if($this->data['showjumplinks']) { ?><div id="jump-to-nav"><?php $this->msg('jumpto') ?> <a href="#column-one"><?php $this->msg('jumptonavigation') ?></a>, <a href="#searchInput"><?php $this->msg('jumptosearch') ?></a></div><?php } ?>
+			<!-- start content -->
+			<?php $this->html('bodytext') ?>
+			<?php if($this->data['catlinks']) { $this->html('catlinks'); } ?>
+			<!-- end content -->
+			<?php if($this->data['dataAfterContent']) { $this->html ('dataAfterContent'); } ?>
+			<div class="visualClear"></div>
+		</div>
+	</div>
+		</div>
+	<!-- end of gumax-content-body -->
+<?php
+	}
+
+	/*************************************************************************************************/
+	function toolbox() {
+?>
+	<!-- personal tools  -->
+	<div id="gumax-personal-tools">
+		<h5><?php $this->msg('toolbox') ?></h5>
+		<ul>
+<?php
+		if($this->data['notspecialpage']) { ?>
+				<li id="t-whatlinkshere"><a href="<?php
+				echo htmlspecialchars($this->data['nav_urls']['whatlinkshere']['href'])
+				?>"   ><?php $this->msg('whatlinkshere') ?></a></li>
+				<li>&#47;</li>
+<?php
+			if( $this->data['nav_urls']['recentchangeslinked'] ) { ?>
+				<li id="t-recentchangeslinked"><a href="<?php
+				echo htmlspecialchars($this->data['nav_urls']['recentchangeslinked']['href'])
+				?>"   ><?php $this->msg('recentchangeslinked') ?></a></li>
+				<li>&#47;</li>
+<?php 		}
+		}
+		if(isset($this->data['nav_urls']['trackbacklink'])) { ?>
+			<li id="t-trackbacklink"><a href="<?php
+				echo htmlspecialchars($this->data['nav_urls']['trackbacklink']['href'])
+				?>"   ><?php $this->msg('trackbacklink') ?></a></li>
+				<li>&#47;</li>
+<?php 	}
+		if($this->data['feeds']) { ?>
+			<li id="feedlinks"><?php foreach($this->data['feeds'] as $key => $feed) {
+					?><span id="feed-<?php echo Sanitizer::escapeId($key) ?>"><a href="<?php
+					echo htmlspecialchars($feed['href']) ?>"   ><?php echo htmlspecialchars($feed['text'])?></a>&nbsp;</span>
+					<?php } ?></li>
+					<li>&#47;</li><?php
+		}
+
+		foreach( array('contributions', 'log', 'blockip', 'emailuser', 'upload', 'specialpages') as $special ) {
+			if($this->data['nav_urls'][$special]) {
+				?><li id="t-<?php echo $special ?>"><a href="<?php echo htmlspecialchars($this->data['nav_urls'][$special]['href'])
+				?>"   ><?php $this->msg($special) ?></a></li>
+<?php			if($special != 'specialpages') echo "<li>&#47;</li>"; ?>
+<?php		}
+		}
+
+		if(!empty($this->data['nav_urls']['print']['href'])) { ?>
+				<li>&#47;</li>
+				<li id="t-print"><a href="<?php echo htmlspecialchars($this->data['nav_urls']['print']['href'])
+				?>"   ><?php $this->msg('printableversion') ?></a></li><?php
+		}
+
+		if(!empty($this->data['nav_urls']['permalink']['href'])) { ?>
+				<li>&#47;</li>
+				<li id="t-permalink"><a href="<?php echo htmlspecialchars($this->data['nav_urls']['permalink']['href'])
+				?>"   ><?php $this->msg('permalink') ?></a></li><?php
+		} elseif ($this->data['nav_urls']['permalink']['href'] === '') { ?>
+				<li>&#47;</li>
+				<li id="t-ispermalink"<?php echo $this->skin->tooltip('t-ispermalink') ?>><?php $this->msg('permalink') ?></li><?php
+		}
+
+		wfRunHooks( 'GuMaxTemplateToolboxEnd', array( &$this ) );
+		wfRunHooks( 'SkinTemplateToolboxEnd', array( &$this ) );
+?>
+		</ul>
+	</div>
+	<!-- end of personal tools  -->
+<?php
+	}
+
+	/*************************************************************************************************/
+
+	function gumaxLastModified() {
+		global $wgLang, $wgArticle;
+		if ( !$wgArticle ) return '';
+
+		if( $this->mRevisionId ) {
+			$timestamp = Revision::getTimestampFromId( $this->mRevisionId, $wgArticle->getId() );
+		} else {
+			$timestamp = $wgArticle->getTimestamp();
+		}
+		if ( $timestamp ) {
+			$d = $wgLang->date( $timestamp, true );
+			$t = $wgLang->time( $timestamp, true );
+			//$s = ' ' . wfMsg( 'lastmodifiedat', $d, $t );
+			$s = 'modified on ' . $d . ' at ' . $t;
+		} else {
+			$s = '';
+		}
+		//if ( wfGetLB()->getLaggedSlaveMode() ) {
+		//	$s .= ' <strong>' . wfMsg( 'laggedslavemode' ) . '</strong>';
+		//}
+		return $s;
+	}
+
+	/*************************************************************************************************/
+
+	function gumaxViewcount() {
+		global $wgDisableCounters;
+		if ( $wgDisableCounters ) return '';
+
+		global $wgLang, $wgArticle;
+		if ( is_object( $wgArticle ) ) {
+			$viewcount = $wgLang->formatNum( $wgArticle->getCount() );
+			if ( $viewcount ) {
+				//$viewcount = wfMsg( "viewcount", $viewcount );
+				$viewcount = $viewcount . " views";
+			} else {
+				$viewcount = '';
+			}
+		} else {
+			$viewcount = '';
+		}
+		return $viewcount;
+	}
+
+	/*************************************************************************************************/
+
+	function gumaxMessage() {
+?>
+		<div id="gumax-f-message">
+			<?php if($this->data['lastmod']) { ?><span id="f-lastmod"><?php $this->html('lastmod') ?></span>
+			<?php } ?><?php if($this->data['viewcount']) { ?><span id="f-viewcount"><?php  $this->html('viewcount') ?> </span>
+			<?php } ?>
+		</div>
+<?php
+	}
+
+	/*************************************************************************************************/
+	function footerBox() {
+?>
+	<!-- gumax-f-list -->
+	<div id="gumax-f-list">
+		<ul>
+			<?php
+					$footerlinks = array(
+						'numberofwatchingusers', 'credits',
+						'privacy', 'about', 'disclaimer', 'tagline',
+					);
+					foreach( $footerlinks as $aLink ) {
+						if( isset( $this->data[$aLink] ) && $this->data[$aLink] ) {
+			?>				<li id="<?php echo$aLink?>"><?php $this->html($aLink) ?></li>
+							<?php		echo "<li>/</li>"	?>
+			<?php 		}
+					}
+			?>
+			<li id="f-poweredby"><a href="http://mediawiki.org" target="_blank">Powered by MediaWiki</a></li>
+			<li>&#47;</li>
+			<li id="f-designedby"><a href="http://paulgu.com" target="_blank">Designed by Paul Gu</a></li>
+		</ul>
+	</div>
+	<!-- end of gumax-f-list -->
+<?php
+	}
+
+	/*************************************************************************************************/
+
+
+} // end of class
+

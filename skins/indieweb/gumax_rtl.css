@@ -1,0 +1,43 @@
+/*
+ * ----------------------------------------------------------------------------
+ * gumax_rtl.css
+ * ----------------------------------------------------------------------------
+ */
+
+/* Note: be aware of the order */
+@import url("rtl.css");
+
+
+/* Login menu
+-----------------------------------------------------------------------------*/
+#gumax-p-login {
+	left: 0;
+	background: none;
+	float: left;
+	text-align: left;
+}
+#gumax-p-login ul {
+	background: none;
+}
+
+/* Logo
+-----------------------------------------------------------------------------*/
+#p-logo {
+	right: 15px;
+}
+
+/* Search
+-----------------------------------------------------------------------------*/
+#gumax-p-search {
+	top: 60px; left: 0;
+}
+
+/* Shadow
+-----------------------------------------------------------------------------*/
+#gumax-page-table-left {
+	background: transparent url('images/gm_shadow_r.png') top right repeat-y;
+	}
+#gumax-page-table-right {
+	background: transparent url('images/gm_shadow_l.png') top left repeat-y;
+	}
+
